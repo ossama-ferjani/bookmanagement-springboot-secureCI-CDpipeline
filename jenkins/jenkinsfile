@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    tools {
+        // Define the JDK and Maven tool installations in Jenkins
+        jdk 'jdk17' // Replace 'jdk8' with the configured JDK tool name in Jenkins
+        maven 'maven3' // Replace 'maven3' with the configured Maven tool name in Jenkins
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+               checkout scm
+              
+            }
+        }
+
+        stage('Compile and Test') {
+            steps {
+                // Use Maven to compile and test the Spring Boot application
+                script {
+                    def mvnHome = tool 'maven3'
+                    sh "${mvnHome}/bin/mvn clean compile test"
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                // Package the Spring Boot application into a JAR file
+                script {
+                    def mvnHome = tool 'maven3'
+                    sh "${mvnHome}/bin/mvn package"
+                }
+            }
+        }
+
+        // Other stages (Build Scan, Dockerize, Push to Docker Registry) remain the same...
+        // ...
+
+        stage('Dockerize') {
+            steps {
+                // Dockerize the Spring Boot application by building a Docker image
+                script {
+                    def dockerImage = docker.build('ossamaferjani/managebook:latest', '.')
+                    // Replace 'your-docker-username' and 'your-spring-boot-app' with appropriate names
+                }
+            }
+        }
+
+        stage('Push to Docker Registry') {
+            steps {
+                // Push the Docker image to a Docker registry (e.g., Docker Hub)
+                script {
+                    docker.withRegistry('https://hub.docker.com/repository/docker/ossamaferjani/java-k8s', 'dockerhub_id') {
+                        // Replace 'docker-hub-credentials' with your Jenkins credential ID for Docker Hub
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline successfully executed!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
